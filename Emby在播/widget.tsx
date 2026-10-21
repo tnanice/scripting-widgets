@@ -1,5 +1,5 @@
-import { HStack, VStack, Text, Spacer, Image, ProgressView, Button, Divider, Widget } from "scripting"
-import { CycleServerIntent } from "./app_intents"
+import { HStack, VStack, Text, Spacer, Image, ProgressView, Button, Divider, Toggle, Widget } from "scripting"
+import { CycleServerIntent, TogglePlaysIntent } from "./app_intents"
 
 // 手机需与 N100 在同一局域网，或通过 VPN 访问。无需填写 Emby API Key。
 const BASE_URL = "http://192.168.10.250:8899"
@@ -35,10 +35,20 @@ function epCode(sub?: string): string {
   return m ? m[0] : ""
 }
 
+// 在播明细展开/收起的小箭头按钮（Toggle 意图，无参数透传）。
+function TogglePlaysToggle({ expand }: { expand: boolean }) {
+  return (
+    <Toggle value={!expand} intent={TogglePlaysIntent({ expand })} toggleStyle="button" buttonStyle="plain">
+      <Image systemName={expand ? "chevron.down" : "chevron.right"}
+        imageScale="small" foregroundStyle={accent} />
+    </Toggle>
+  )
+}
+
 async function load(): Promise<{ data: Live | null; offline: boolean }> {
   try {
-    // fresh=1 避免工作台返回上一次访问留下的旧缓存。
-    const response = await fetch(BASE_URL + "/api/emby/live?fresh=1", { timeout: 18 })
+    // 不带 fresh=1：走工作台 10s 缓存 + SWR（过期立返旧值后台重建），毫秒级响应。
+    const response = await fetch(BASE_URL + "/api/emby/live", { timeout: 10 })
     if (!response.ok) throw new Error("HTTP " + response.status)
     const data = await response.json()
     if (!isLive(data)) throw new Error("在播接口数据不完整")
@@ -150,6 +160,68 @@ async function main() {
         <Spacer minLength={0} />
         <Text font="caption2" foregroundStyle={offline || largeFailures ? warning : muted} lineLimit={1}>
           {data ? updateText : "等待连接"}{largeFailures ? ` · ${largeFailures} 台异常` : ""}
+        </Text>
+      </VStack>,
+      { policy: "after", date: new Date(Date.now() + 2 * 60 * 1000) },
+    )
+    return
+  }
+
+  // ===== 中号：3 台卡片式布局（与大号同风格，在播明细默认折叠）=====
+  // 每台一行：名称 + N 播放中/空闲；点 ▸/▾ 展开或收起在播明细。
+  if (!small && !large) {
+    const medFailures = largeServers.filter(s => s.status !== "ok").length
+    const showPlays = Storage.get<boolean>("emby-live-v1:showPlays") || false
+    Widget.present(
+      <VStack alignment="leading" spacing={8}
+        padding={{ top: 24, leading: 24, bottom: 22, trailing: 24 }}
+        widgetBackground="#101722" foregroundStyle="#F1F5FA">
+        <HStack spacing={6}>
+          <Image systemName="play.tv.fill" foregroundStyle={accent} />
+          <Text font="headline" lineLimit={1}>Emby 在播</Text>
+          <Spacer />
+          <Text font="caption" foregroundStyle={accent}>{largeRows.length} 在播</Text>
+        </HStack>
+        {largeServers.map((server, i) => {
+          const plays = server.sessions.filter(s => s.playing)
+          const shortName = server.name.replace("Nanflix-", "")
+          return (
+            <VStack key={server.id} alignment="leading" spacing={4}>
+              <HStack spacing={6}>
+                <Text font="subheadline" fontWeight="bold" foregroundStyle="#F1F5FA" lineLimit={1}>
+                  {shortName}
+                </Text>
+                <Text font="caption2" foregroundStyle={plays.length ? accent : muted}>
+                  {plays.length ? `${plays.length} 播放中` : "空闲"}
+                </Text>
+                {server.status !== "ok" ? <Text font="caption2" foregroundStyle={warning}>异常</Text> : null}
+                {plays.length ? (
+                  <HStack spacing={4}>
+                    <Spacer minLength={0} />
+                    <TogglePlaysToggle expand={!showPlays} />
+                  </HStack>
+                ) : null}
+              </HStack>
+              {showPlays ? plays.map((p, j) => (
+                <HStack key={String(j)} spacing={5} alignment="bottom" padding={{ bottom: 2 }}>
+                  <Image systemName={p.paused ? "pause.fill" : "play.fill"}
+                    imageScale="small" foregroundStyle={p.paused ? warning : accent} />
+                  <Text font="subheadline" lineLimit={1}>{p.title || "未知影片"}</Text>
+                  {epCode(p.sub) ? <Text font="caption" foregroundStyle={muted} lineLimit={1}>
+                    {epCode(p.sub)}
+                  </Text> : null}
+                  <Spacer />
+                  <Text font="caption" foregroundStyle={muted} lineLimit={1}>{p.user}</Text>
+                </HStack>
+              )) : null}
+              {i < largeServers.length - 1 ? <Divider /> : null}
+            </VStack>
+          )
+        })}
+        <Spacer minLength={0} />
+        <Text font="caption2" foregroundStyle={offline || medFailures ? warning : muted} lineLimit={1}>
+          {data ? updateText : "等待连接"}{medFailures ? ` · ${medFailures} 台异常` : ""}
+          {!showPlays && largeRows.length ? " · 点▶展开明细" : ""}
         </Text>
       </VStack>,
       { policy: "after", date: new Date(Date.now() + 2 * 60 * 1000) },

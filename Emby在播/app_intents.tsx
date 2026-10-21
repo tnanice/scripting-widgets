@@ -1,7 +1,6 @@
 import { AppIntentManager, AppIntentProtocol, Widget } from "scripting"
 
-// 服务器切换：点一下循环 全部 → HO → TX → SJC → US → 全部…
-// 选择持久化在 Storage（共享域），不同桌面组件共享同一个选择。
+// 服务器切换（中/大号 ↻ 按钮）：循环 全部 → HO → TX → SJC → US → 全部…
 export const CycleServerIntent = AppIntentManager.register({
   name: "CycleServerIntent",
   protocol: AppIntentProtocol.AppIntent,
@@ -12,7 +11,16 @@ export const CycleServerIntent = AppIntentManager.register({
     const idx = ORDER.indexOf(current)
     const next = ORDER[(idx + 1) % ORDER.length]
     Storage.set(KEY, next)
-    // reloadUserWidgets 只刷新正式桌面组件，比 reloadAll（还含测试组件）更轻快。
+    Widget.reloadUserWidgets()
+  }
+})
+
+// 中号在播明细展开/收起（Toggle）：记住状态，各中号组件共享。
+export const TogglePlaysIntent = AppIntentManager.register({
+  name: "TogglePlaysIntent",
+  protocol: AppIntentProtocol.AppIntent,
+  perform: async ({ expand }: { expand: boolean }) => {
+    Storage.set("emby-live-v1:showPlays", expand)
     Widget.reloadUserWidgets()
   }
 })
