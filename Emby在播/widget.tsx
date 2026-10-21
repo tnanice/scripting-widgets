@@ -28,6 +28,13 @@ function isLive(value: any): value is Live {
       .every(key => Number.isFinite(value.totals[key]))
 }
 
+// 从 sub（如 "S01E24 “地理人”…"）提取剧集编号 S01E24；无编号返回空串。
+function epCode(sub?: string): string {
+  if (!sub) return ""
+  const m = sub.match(/^S\d+E\d+/)
+  return m ? m[0] : ""
+}
+
 async function load(): Promise<{ data: Live | null; offline: boolean }> {
   try {
     // fresh=1 避免工作台返回上一次访问留下的旧缓存。
@@ -88,10 +95,10 @@ async function main() {
   const filterLabel = (paramFilter || storedFilter).replace("Nanflix-", "")
 
   // ===== 大号：工作台卡片式布局 =====
-  // 每台服务器一行（名称 + 在播数），下方跟在播会话行；每台最多 2 条，超出折叠 +N。
+  // 每台服务器一行（名称 + 在播数），下方跟在播会话行；每台最多 3 条，超出折叠 +N。
   if (large) {
     const largeFailures = largeServers.filter(s => s.status !== "ok").length
-    const MAX_PLAYS = 2
+    const MAX_PLAYS = 3
     Widget.present(
       <VStack alignment="leading" spacing={10}
         padding={{ top: 24, leading: 24, bottom: 22, trailing: 24 }}
@@ -111,7 +118,7 @@ async function main() {
           const hidden = plays.length - shown.length
           const shortName = server.name.replace("Nanflix-", "")
           return (
-            <VStack key={server.id} alignment="leading" spacing={4}>
+            <VStack key={server.id} alignment="leading" spacing={5}>
               <HStack spacing={6}>
                 <Text font="subheadline" fontWeight="bold" foregroundStyle="#F1F5FA" lineLimit={1}>
                   {shortName}
@@ -122,13 +129,15 @@ async function main() {
                 {server.status !== "ok" ? <Text font="caption2" foregroundStyle={warning}>异常</Text> : null}
               </HStack>
               {shown.map((p, j) => (
-                <HStack key={String(j)} spacing={5} alignment="top">
+                // 提取剧集编号（S01E24），集名不要。
+                // 编号字号比剧名小，底部对齐；行与行之间留一点行距。
+                <HStack key={String(j)} spacing={5} alignment="bottom" padding={{ bottom: 2 }}>
                   <Image systemName={p.paused ? "pause.fill" : "play.fill"}
                     imageScale="small" foregroundStyle={p.paused ? warning : accent} />
                   <Text font="subheadline" lineLimit={1}>{p.title || "未知影片"}</Text>
-                  <Text font="caption2" foregroundStyle={muted} lineLimit={1}>
-                    {p.sub ? p.sub.replace(/^S\d+E\d+\s*/, "") : ""}
-                  </Text>
+                  {epCode(p.sub) ? <Text font="caption" foregroundStyle={muted} lineLimit={1}>
+                    {epCode(p.sub)}
+                  </Text> : null}
                   <Spacer />
                   <Text font="caption" foregroundStyle={muted} lineLimit={1}>{p.user}</Text>
                 </HStack>
