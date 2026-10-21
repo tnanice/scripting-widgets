@@ -81,7 +81,8 @@ async function main() {
   const filterLabel = (paramFilter || storedFilter).replace("Nanflix-", "")
   Widget.present(
     <VStack alignment="leading" spacing={large ? 12 : 8}
-      padding={4} widgetBackground="#101722" foregroundStyle="#F1F5FA">
+      padding={{ top: 16, leading: 16, bottom: 14, trailing: 16 }}
+      widgetBackground="#101722" foregroundStyle="#F1F5FA">
       <HStack spacing={6}>
         <Image systemName="play.tv.fill" foregroundStyle={accent} />
         <Text font="headline" lineLimit={1}>Emby 在播</Text>
