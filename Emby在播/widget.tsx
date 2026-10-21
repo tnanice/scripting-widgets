@@ -1,8 +1,11 @@
-import { HStack, VStack, Text, Spacer, Image, ProgressView, Widget } from "scripting"
+import { HStack, VStack, Text, Spacer, Image, ProgressView, Button, Widget } from "scripting"
+import { CycleServerIntent } from "./app_intents"
 
 // 手机需与 N100 在同一局域网，或通过 VPN 访问。无需填写 Emby API Key。
 const BASE_URL = "http://192.168.10.250:8899"
 const CACHE_KEY = "emby-live-v1:" + BASE_URL
+// 切换按钮记住的服务器筛选（共享域，各桌面组件共用）。
+export const FILTER_KEY = "emby-live-v1:serverFilter"
 
 type Session = {
   user: string; title: string; sub: string; device: string; client: string
@@ -45,8 +48,14 @@ async function main() {
   const { data, offline } = await load()
   const small = Widget.family === "systemSmall"
   const large = Widget.family === "systemLarge"
-  // 参数可填写服务器名称或 ID，例如 Nanflix-HO；留空显示全部。
-  const filter = (Widget.parameter || "").trim().toLowerCase()
+  // 筛选优先级：小组件「参数」> 切换按钮记住的选择 > 全部。
+  // 参数里可用 "auto" 表示跟随切换按钮。
+  const paramRaw = (Widget.parameter || "").trim()
+  const paramFilter = paramRaw && paramRaw.toLowerCase() !== "auto"
+    ? paramRaw.toLowerCase() : ""
+  const storedFilter = (Storage.get<string>(FILTER_KEY) || "").trim().toLowerCase()
+  const filter = paramFilter || storedFilter
+  // 参数留空或填 auto 跟随切换按钮；填服务器名(如 Nanflix-HO)固定只看该台。
   const servers = (data?.servers || []).filter(s => !filter
     || s.name.toLowerCase() === filter || s.id.toLowerCase() === filter)
   const rows = servers.flatMap(server => server.sessions
@@ -68,6 +77,8 @@ async function main() {
     : offline ? "当前显示上次保存的数据"
     : failures ? "部分服务器查询失败" : "有人开始播放后将在下次刷新显示"
 
+  // 切换按钮显示的当前目标：参数优先时显示参数名，否则显示记住的选择。
+  const filterLabel = (paramFilter || storedFilter).replace("Nanflix-", "")
   Widget.present(
     <VStack alignment="leading" spacing={large ? 12 : 8}
       padding={4} widgetBackground="#101722" foregroundStyle="#F1F5FA">
@@ -76,9 +87,15 @@ async function main() {
         <Text font="headline" lineLimit={1}>Emby 在播</Text>
         <Spacer />
         {!small ? <Text font="caption" foregroundStyle={accent}>{rows.length} 在播</Text> : null}
+        <Button intent={CycleServerIntent(undefined)} buttonStyle="plain">
+          <HStack spacing={2}>
+            <Image systemName="arrow.2.circlepath" imageScale="small" foregroundStyle={accent} />
+            {filterLabel ? <Text font="caption2" foregroundStyle={accent} lineLimit={1}>{filterLabel}</Text> : null}
+          </HStack>
+        </Button>
       </HStack>
       {!small ? <Text font="caption2" foregroundStyle={muted} lineLimit={1}>
-        {filter || "NANFLIX"} · {servers.length - failures}/{servers.length} 台正常 · {online} 在线
+        {filterLabel || "NANFLIX"} · {servers.length - failures}/{servers.length} 台正常 · {online} 在线
       </Text> : null}
       {visible.length ? visible.map((row, i) => (
         <VStack key={String(i)} alignment="leading" spacing={3}>

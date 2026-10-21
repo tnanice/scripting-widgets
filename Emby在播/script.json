@@ -2,7 +2,7 @@
   "icon": "play.tv.fill",
   "color": "#8BE2AF",
   "name": "Emby Now Playing",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Aggregated Emby now-playing widget reading N100 workbench API over LAN/VPN",
   "localizedNames": {
     "zh": "Emby 在播"
