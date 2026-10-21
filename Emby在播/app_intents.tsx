@@ -15,12 +15,14 @@ export const CycleServerIntent = AppIntentManager.register({
   }
 })
 
-// 中号在播明细展开/收起（Toggle）：记住状态，各中号组件共享。
+// 中号在播明细展开/收起：直接翻转记住的状态（Button 意图，与 ↻ 同模式）。
 export const TogglePlaysIntent = AppIntentManager.register({
   name: "TogglePlaysIntent",
   protocol: AppIntentProtocol.AppIntent,
-  perform: async ({ expand }: { expand: boolean }) => {
-    Storage.set("emby-live-v1:showPlays", expand)
+  perform: async () => {
+    const KEY = "emby-live-v1:showPlays"
+    const current = Storage.get<boolean>(KEY) || false
+    Storage.set(KEY, !current)
     Widget.reloadUserWidgets()
   }
 })

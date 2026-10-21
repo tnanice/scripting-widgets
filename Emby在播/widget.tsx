@@ -1,4 +1,4 @@
-import { HStack, VStack, Text, Spacer, Image, ProgressView, Button, Divider, Toggle, Widget } from "scripting"
+import { HStack, VStack, Text, Spacer, Image, ProgressView, Button, Divider, Widget } from "scripting"
 import { CycleServerIntent, TogglePlaysIntent } from "./app_intents"
 
 // 手机需与 N100 在同一局域网，或通过 VPN 访问。无需填写 Emby API Key。
@@ -35,14 +35,15 @@ function epCode(sub?: string): string {
   return m ? m[0] : ""
 }
 
-// 在播明细展开/收起的小箭头按钮（Toggle 意图）。
-// value 直接反映「当前是否展开」；perform 收到的 newState 由 Toggle 语义自动取反。
-function TogglePlaysToggle({ expand }: { expand: boolean }) {
+// 在播明细展开/收起的箭头按钮。
+// 与 ↻ 切换按钮同模式（Button 意图，真机已验证可用）：
+// 收起显示 ▸（点击展开），展开显示 ▾（点击收起）。
+function TogglePlaysToggle({ expanded }: { expanded: boolean }) {
   return (
-    <Toggle value={expand} intent={TogglePlaysIntent({ expand: !expand })} toggleStyle="button" buttonStyle="plain">
-      <Image systemName={expand ? "chevron.down" : "chevron.right"}
+    <Button intent={TogglePlaysIntent(undefined)} buttonStyle="plain">
+      <Image systemName={expanded ? "chevron.down" : "chevron.right"}
         imageScale="small" foregroundStyle={accent} />
-    </Toggle>
+    </Button>
   )
 }
 
@@ -198,7 +199,7 @@ async function main() {
                 {server.status !== "ok" ? <Text font="caption2" foregroundStyle={warning}>异常</Text> : null}
                 <Spacer />
                 {plays.length ? (
-                  <TogglePlaysToggle expand={showPlays} />
+                  <TogglePlaysToggle expanded={showPlays} />
                 ) : null}
               </HStack>
               {showPlays ? plays.map((p, j) => (
@@ -220,7 +221,7 @@ async function main() {
         <Spacer minLength={0} />
         <Text font="caption2" foregroundStyle={offline || medFailures ? warning : muted} lineLimit={1}>
           {data ? updateText : "等待连接"}{medFailures ? ` · ${medFailures} 台异常` : ""}
-          {!showPlays && largeRows.length ? " · 点▶展开明细" : ""}
+          {!showPlays && largeRows.length ? " · 点▶展开明细" : ""} · v0.4.2
         </Text>
       </VStack>,
       { policy: "after", date: new Date(Date.now() + 2 * 60 * 1000) },
