@@ -35,10 +35,11 @@ function epCode(sub?: string): string {
   return m ? m[0] : ""
 }
 
-// 在播明细展开/收起的小箭头按钮（Toggle 意图，无参数透传）。
+// 在播明细展开/收起的小箭头按钮（Toggle 意图）。
+// value 直接反映「当前是否展开」；perform 收到的 newState 由 Toggle 语义自动取反。
 function TogglePlaysToggle({ expand }: { expand: boolean }) {
   return (
-    <Toggle value={!expand} intent={TogglePlaysIntent({ expand })} toggleStyle="button" buttonStyle="plain">
+    <Toggle value={expand} intent={TogglePlaysIntent({ expand: !expand })} toggleStyle="button" buttonStyle="plain">
       <Image systemName={expand ? "chevron.down" : "chevron.right"}
         imageScale="small" foregroundStyle={accent} />
     </Toggle>
@@ -195,11 +196,9 @@ async function main() {
                   {plays.length ? `${plays.length} 播放中` : "空闲"}
                 </Text>
                 {server.status !== "ok" ? <Text font="caption2" foregroundStyle={warning}>异常</Text> : null}
+                <Spacer />
                 {plays.length ? (
-                  <HStack spacing={4}>
-                    <Spacer minLength={0} />
-                    <TogglePlaysToggle expand={!showPlays} />
-                  </HStack>
+                  <TogglePlaysToggle expand={showPlays} />
                 ) : null}
               </HStack>
               {showPlays ? plays.map((p, j) => (
