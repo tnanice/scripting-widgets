@@ -12,6 +12,7 @@ export const CycleServerIntent = AppIntentManager.register({
     const idx = ORDER.indexOf(current)
     const next = ORDER[(idx + 1) % ORDER.length]
     Storage.set(KEY, next)
-    Widget.reloadAll()
+    // reloadUserWidgets 只刷新正式桌面组件，比 reloadAll（还含测试组件）更轻快。
+    Widget.reloadUserWidgets()
   }
 })

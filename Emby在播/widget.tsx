@@ -81,7 +81,7 @@ async function main() {
   const filterLabel = (paramFilter || storedFilter).replace("Nanflix-", "")
   Widget.present(
     <VStack alignment="leading" spacing={large ? 12 : 8}
-      padding={{ top: 16, leading: 16, bottom: 14, trailing: 16 }}
+      padding={{ top: 24, leading: 24, bottom: 22, trailing: 24 }}
       widgetBackground="#101722" foregroundStyle="#F1F5FA">
       <HStack spacing={6}>
         <Image systemName="play.tv.fill" foregroundStyle={accent} />
@@ -128,7 +128,7 @@ async function main() {
         {rows.length > visible.length ? ` · 另 ${rows.length - visible.length} 个在播` : ""}
       </Text>
     </VStack>,
-    { policy: "after", date: new Date(Date.now() + 5 * 60 * 1000) },
+    { policy: "after", date: new Date(Date.now() + 2 * 60 * 1000) },
   )
 }
 
