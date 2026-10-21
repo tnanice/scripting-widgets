@@ -1,6 +1,6 @@
 # Scripting 小组件
 
-用于 iPhone Scripting App 的个人小组件。
+用于 iPhone Scripting App 的个人小组件。仓库公开，可通过 Scripting 的「远程来源」功能直接安装和更新。
 
 ## Emby 在播
 
@@ -8,19 +8,19 @@
 
 - [安装与使用说明](./Emby在播/README.md)
 - [小组件代码 widget.tsx](./Emby在播/widget.tsx)
-- [预览入口 index.tsx](./Emby在播/index.tsx)
-- [下载发布版本](https://github.com/tnanice/scripting-widgets/releases/latest)
+- [项目元数据 script.json](./Emby在播/script.json)
 
-## 下载和更新
+## 远程安装与自动更新（Scripting 原生支持）
 
-1. 登录 GitHub，打开上方的发布版本页面，下载 `EmbyNowPlaying.zip` 并在 iPhone「文件」App 中解压。
-2. 在 Scripting 新建「Emby在播」项目，将压缩包中的 `widget.tsx` 和 `index.tsx` 内容复制到同名文件。
-3. 运行项目预览，再到桌面添加 Scripting 小组件并选择该项目。
-4. 更新时下载最新发布版本，替换项目中的两个文件，再运行项目、关闭预览以请求桌面刷新。无需删除桌面小组件。
+Scripting 支持 GitHub 仓库作为「远程来源」，配置一次后 App 自动检查更新，无需手动复制代码：
 
-如改过服务器地址，请在替换前保存自己的 `BASE_URL`，更新后重新填写。
-源码可能比发布包更新，可通过 Code → Download ZIP 下载 main 分支；发布版本以 Releases 为准。
-目前为手动更新，不会在手机后台自动安装代码。
+1. 在 Scripting 新建「Emby在播」项目，首次需复制 `script.json`、`widget.tsx`、`index.tsx`。
+2. 项目设置 → 远程来源，填入：
+   ```
+   https://github.com/tnanice/scripting-widgets/tree/main/Emby在播
+   ```
+3. 自动更新间隔填 `86400`（每天检查；App 最小 1800 秒）。
+4. 之后仓库更新 → 手机 App 检测到新版本即可更新，替换文件由 App 完成。
 
-仓库为私有，下载需登录有访问权限的 GitHub 账号。代码未包含 Emby API 密钥。
+仓库为公开，任何设备可拉取；代码不含 Emby API 密钥，仅有内网工作台地址（不可从公网访问）。
 接口已在 N100 验证；iPhone Scripting 的运行与布局尚待真机验证。

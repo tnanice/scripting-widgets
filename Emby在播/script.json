@@ -1,0 +1,17 @@
+{
+  "icon": "play.tv.fill",
+  "color": "#8BE2AF",
+  "name": "Emby Now Playing",
+  "version": "0.1.1",
+  "description": "Aggregated Emby now-playing widget reading N100 workbench API over LAN/VPN",
+  "localizedNames": {
+    "zh": "Emby 在播"
+  },
+  "localizedDescriptions": {
+    "zh": "读取 N100 工作台多服务器在播接口的桌面小组件，走内网/EasyTier，无需保存 Emby API Key"
+  },
+  "remoteResource": {
+    "url": "https://github.com/tnanice/scripting-widgets/tree/main/Emby%E5%9C%A8%E6%92%AD",
+    "autoUpdateInterval": 86400
+  }
+}
