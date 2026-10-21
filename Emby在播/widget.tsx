@@ -1,4 +1,4 @@
-import { HStack, VStack, Text, Spacer, Image, ProgressView, Button, Widget } from "scripting"
+import { HStack, VStack, Text, Spacer, Image, ProgressView, Button, Divider, Widget } from "scripting"
 import { CycleServerIntent } from "./app_intents"
 
 // 手机需与 N100 在同一局域网，或通过 VPN 访问。无需填写 Emby API Key。
@@ -64,6 +64,13 @@ async function main() {
   const failures = servers.filter(s => s.status !== "ok").length
   const visible = rows.slice(0, small ? 1 : large ? 4 : 1)
   const online = servers.reduce((n, s) => n + (s.online || 0), 0)
+  // 大号：固定展示 3 台「外部」服务器（与工作台卡片一致，不含 HO），一屏排完。
+  const HIDDEN_LARGE = ["nanflix-ho"]
+  const largeServers = (data?.servers || [])
+    .filter(s => !HIDDEN_LARGE.includes(s.name.toLowerCase()))
+  const largeRows = largeServers.flatMap(server => server.sessions
+    .filter(s => s.playing).map(session => ({ ...session, server: server.name })))
+    .sort((a, b) => Number(a.paused) - Number(b.paused))
   const accent = "#8BE2AF"
   const muted = "#9DAABC"
   const warning = "#F1BF73"
@@ -79,6 +86,61 @@ async function main() {
 
   // 切换按钮显示的当前目标：参数优先时显示参数名，否则显示记住的选择。
   const filterLabel = (paramFilter || storedFilter).replace("Nanflix-", "")
+
+  // ===== 大号：工作台卡片式布局 =====
+  // 每台服务器一行（名称 + 在播数），下方跟在播会话行（剧名 · 用户），一屏排完 3 台。
+  if (large) {
+    const largeFailures = largeServers.filter(s => s.status !== "ok").length
+    Widget.present(
+      <VStack alignment="leading" spacing={10}
+        padding={{ top: 24, leading: 24, bottom: 22, trailing: 24 }}
+        widgetBackground="#101722" foregroundStyle="#F1F5FA">
+        <HStack spacing={6}>
+          <Image systemName="play.tv.fill" foregroundStyle={accent} />
+          <Text font="headline" lineLimit={1}>Emby 在播</Text>
+          <Spacer />
+          <Text font="caption" foregroundStyle={accent}>{largeRows.length} 在播</Text>
+          <Button intent={CycleServerIntent(undefined)} buttonStyle="plain">
+            <Image systemName="arrow.2.circlepath" imageScale="small" foregroundStyle={accent} />
+          </Button>
+        </HStack>
+        {largeServers.map((server, i) => {
+          const plays = server.sessions.filter(s => s.playing)
+          const shortName = server.name.replace("Nanflix-", "")
+          return (
+            <VStack key={server.id} alignment="leading" spacing={4}>
+              <HStack spacing={6}>
+                <Text font="subheadline" fontWeight="bold" foregroundStyle="#F1F5FA" lineLimit={1}>
+                  {shortName}
+                </Text>
+                <Text font="caption2" foregroundStyle={plays.length ? accent : muted}>
+                  {plays.length ? `${plays.length} 播放中` : "空闲"}
+                </Text>
+                {server.status !== "ok" ? <Text font="caption2" foregroundStyle={warning}>异常</Text> : null}
+              </HStack>
+              {plays.map((p, j) => (
+                <HStack key={String(j)} spacing={5}>
+                  <Image systemName={p.paused ? "pause.fill" : "play.fill"}
+                    imageScale="small" foregroundStyle={p.paused ? warning : accent} />
+                  <Text font="subheadline" lineLimit={1}>{p.title || "未知影片"}</Text>
+                  <Text font="caption" foregroundStyle={muted} lineLimit={1}>{p.user}</Text>
+                </HStack>
+              ))}
+              {i < largeServers.length - 1 ? <Divider /> : null}
+            </VStack>
+          )
+        })}
+        <Spacer minLength={0} />
+        <Text font="caption2" foregroundStyle={offline || largeFailures ? warning : muted} lineLimit={1}>
+          {data ? updateText : "等待连接"}{largeFailures ? ` · ${largeFailures} 台异常` : ""}
+        </Text>
+      </VStack>,
+      { policy: "after", date: new Date(Date.now() + 2 * 60 * 1000) },
+    )
+    return
+  }
+
+  // ===== 小号 / 中号：原有布局 =====
   Widget.present(
     <VStack alignment="leading" spacing={large ? 12 : 8}
       padding={{ top: 24, leading: 24, bottom: 22, trailing: 24 }}
