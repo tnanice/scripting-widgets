@@ -88,9 +88,10 @@ async function main() {
   const filterLabel = (paramFilter || storedFilter).replace("Nanflix-", "")
 
   // ===== 大号：工作台卡片式布局 =====
-  // 每台服务器一行（名称 + 在播数），下方跟在播会话行（剧名 · 用户），一屏排完 3 台。
+  // 每台服务器一行（名称 + 在播数），下方跟在播会话行；每台最多 2 条，超出折叠 +N。
   if (large) {
     const largeFailures = largeServers.filter(s => s.status !== "ok").length
+    const MAX_PLAYS = 2
     Widget.present(
       <VStack alignment="leading" spacing={10}
         padding={{ top: 24, leading: 24, bottom: 22, trailing: 24 }}
@@ -106,6 +107,8 @@ async function main() {
         </HStack>
         {largeServers.map((server, i) => {
           const plays = server.sessions.filter(s => s.playing)
+          const shown = plays.slice(0, MAX_PLAYS)
+          const hidden = plays.length - shown.length
           const shortName = server.name.replace("Nanflix-", "")
           return (
             <VStack key={server.id} alignment="leading" spacing={4}>
@@ -118,14 +121,19 @@ async function main() {
                 </Text>
                 {server.status !== "ok" ? <Text font="caption2" foregroundStyle={warning}>异常</Text> : null}
               </HStack>
-              {plays.map((p, j) => (
-                <HStack key={String(j)} spacing={5}>
+              {shown.map((p, j) => (
+                <HStack key={String(j)} spacing={5} alignment="top">
                   <Image systemName={p.paused ? "pause.fill" : "play.fill"}
                     imageScale="small" foregroundStyle={p.paused ? warning : accent} />
                   <Text font="subheadline" lineLimit={1}>{p.title || "未知影片"}</Text>
+                  <Text font="caption2" foregroundStyle={muted} lineLimit={1}>
+                    {p.sub ? p.sub.replace(/^S\d+E\d+\s*/, "") : ""}
+                  </Text>
+                  <Spacer />
                   <Text font="caption" foregroundStyle={muted} lineLimit={1}>{p.user}</Text>
                 </HStack>
               ))}
+              {hidden > 0 ? <Text font="caption2" foregroundStyle={muted}>+{hidden} 个在播</Text> : null}
               {i < largeServers.length - 1 ? <Divider /> : null}
             </VStack>
           )
