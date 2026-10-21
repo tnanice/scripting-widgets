@@ -1,5 +1,5 @@
 import { HStack, VStack, Text, Spacer, Image, ProgressView, Button, Divider, Widget } from "scripting"
-import { CycleServerIntent, TogglePlaysIntent } from "./app_intents"
+import { CycleServerIntent } from "./app_intents"
 
 // 手机需与 N100 在同一局域网，或通过 VPN 访问。无需填写 Emby API Key。
 const BASE_URL = "http://192.168.10.250:8899"
@@ -33,18 +33,6 @@ function epCode(sub?: string): string {
   if (!sub) return ""
   const m = sub.match(/^S\d+E\d+/)
   return m ? m[0] : ""
-}
-
-// 在播明细展开/收起的箭头按钮。
-// 与 ↻ 切换按钮同模式（Button 意图，真机已验证可用）：
-// 收起显示 ▸（点击展开），展开显示 ▾（点击收起）。
-function TogglePlaysToggle({ expanded }: { expanded: boolean }) {
-  return (
-    <Button intent={TogglePlaysIntent(undefined)} buttonStyle="plain">
-      <Image systemName={expanded ? "chevron.down" : "chevron.right"}
-        imageScale="small" foregroundStyle={accent} />
-    </Button>
-  )
 }
 
 async function load(): Promise<{ data: Live | null; offline: boolean }> {
@@ -170,7 +158,7 @@ async function main() {
   }
 
   // ===== 中号：3 台卡片式布局（与大号同风格，在播明细默认折叠）=====
-  // 每台一行：名称 + N 播放中/空闲；点 ▸/▾ 展开或收起在播明细。
+  // 标题栏右侧「▸展开 / ▾收起」按钮切换明细（复用已注册意图，v0.2.x 真机验证的模式）。
   if (!small && !large) {
     const medFailures = largeServers.filter(s => s.status !== "ok").length
     const showPlays = Storage.get<boolean>("emby-live-v1:showPlays") || false
@@ -183,6 +171,15 @@ async function main() {
           <Text font="headline" lineLimit={1}>Emby 在播</Text>
           <Spacer />
           <Text font="caption" foregroundStyle={accent}>{largeRows.length} 在播</Text>
+          <Button intent={CycleServerIntent({ action: "togglePlays" })} buttonStyle="plain">
+            <HStack spacing={2}>
+              <Image systemName={showPlays ? "chevron.down" : "chevron.right"}
+                imageScale="small" foregroundStyle={accent} />
+              <Text font="caption2" foregroundStyle={accent} lineLimit={1}>
+                {showPlays ? "收起" : "展开"}
+              </Text>
+            </HStack>
+          </Button>
         </HStack>
         {largeServers.map((server, i) => {
           const plays = server.sessions.filter(s => s.playing)
@@ -197,10 +194,6 @@ async function main() {
                   {plays.length ? `${plays.length} 播放中` : "空闲"}
                 </Text>
                 {server.status !== "ok" ? <Text font="caption2" foregroundStyle={warning}>异常</Text> : null}
-                <Spacer />
-                {plays.length ? (
-                  <TogglePlaysToggle expanded={showPlays} />
-                ) : null}
               </HStack>
               {showPlays ? plays.map((p, j) => (
                 <HStack key={String(j)} spacing={5} alignment="bottom" padding={{ bottom: 2 }}>
@@ -220,8 +213,7 @@ async function main() {
         })}
         <Spacer minLength={0} />
         <Text font="caption2" foregroundStyle={offline || medFailures ? warning : muted} lineLimit={1}>
-          {data ? updateText : "等待连接"}{medFailures ? ` · ${medFailures} 台异常` : ""}
-          {!showPlays && largeRows.length ? " · 点▶展开明细" : ""} · v0.4.2
+          {data ? updateText : "等待连接"}{medFailures ? ` · ${medFailures} 台异常` : ""} · v0.4.3
         </Text>
       </VStack>,
       { policy: "after", date: new Date(Date.now() + 2 * 60 * 1000) },

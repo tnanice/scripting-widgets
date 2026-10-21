@@ -1,5 +1,13 @@
 # 更新记录
 
+## v0.4.3 — 2026-10-21
+
+- **修复中号展开按钮不显示（根因定位）**：v0.4.x 用的新意图名 TogglePlaysIntent
+  在设备上未注册（iOS 的 AppIntents 扩展疑似有注册缓存），引用它的 Button 整个不渲染。
+  改为**复用 v0.2.0 起已注册的 CycleServerIntent**，加 `{action:"togglePlays"}` 参数分支。
+- 展开按钮从每台行尾移到**标题栏右侧**，并加文字标签（▸展开 / ▾收起），
+  与真机已验证的 ↻ 按钮完全同构（Button>HStack>Image+Text）。
+
 ## v0.4.2 — 2026-10-21
 
 - 展开箭头从 Toggle 改为 **Button 意图**（与 ↻ 切换按钮同模式，真机已验证 Button 可用；
