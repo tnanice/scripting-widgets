@@ -157,11 +157,23 @@ async function main() {
     return
   }
 
-  // ===== 中号：3 台卡片式布局（与大号同风格，在播明细默认折叠）=====
-  // 标题栏右侧「▸展开 / ▾收起」按钮切换明细（复用已注册意图，v0.2.x 真机验证的模式）。
+  // ===== 中号：单台服务器 + 切换按钮 =====
+  // 一次只看一台（默认 TX；点 ↻ 循环 TX → SJC → US → TX，沿用 serverFilter 记住选择，
+  // HO/全部 需在组件「参数」里填）。在播明细直接平铺（大号同款样式），空间充裕。
   if (!small && !large) {
-    const medFailures = largeServers.filter(s => s.status !== "ok").length
-    const showPlays = Storage.get<boolean>("emby-live-v1:showPlays") || false
+    // 中号专属存储键，与大号的 serverFilter 互不干扰。
+    const MED_KEY = "emby-live-v1:mediumServer"
+    const MED_ORDER = ["Nanflix-TX", "Nanflix-SJC", "Nanflix-US"]
+    let medName = (Storage.get<string>(MED_KEY) || "").trim()
+    // 参数优先：填了服务器名就用参数的（含 HO/其他），否则用记住的中号选择，默认 TX。
+    const medParam = (Widget.parameter || "").trim()
+    const medServer = medParam
+      ? (data?.servers || []).find(s =>
+          s.name.toLowerCase() === medParam.toLowerCase() || s.id.toLowerCase() === medParam.toLowerCase())
+      : ((data?.servers || []).find(s => s.name === medName) || largeServers.find(s => s.name === "Nanflix-TX") || largeServers[0])
+    const medPlays = (medServer?.sessions || []).filter(s => s.playing)
+    const medLabel = (medServer?.name || "…").replace("Nanflix-", "")
+    const medFail = medServer && medServer.status !== "ok"
     Widget.present(
       <VStack alignment="leading" spacing={8}
         padding={{ top: 24, leading: 24, bottom: 22, trailing: 24 }}
@@ -170,50 +182,40 @@ async function main() {
           <Image systemName="play.tv.fill" foregroundStyle={accent} />
           <Text font="headline" lineLimit={1}>Emby 在播</Text>
           <Spacer />
-          <Text font="caption" foregroundStyle={accent}>{largeRows.length} 在播</Text>
-          <Button intent={CycleServerIntent({ action: "togglePlays" })} buttonStyle="plain">
+          <Text font="caption" foregroundStyle={accent}>{medPlays.length} 在播</Text>
+          <Button intent={CycleServerIntent({ action: "cycleMedium" })} buttonStyle="plain">
             <HStack spacing={2}>
-              <Image systemName={showPlays ? "chevron.down" : "chevron.right"}
-                imageScale="small" foregroundStyle={accent} />
-              <Text font="caption2" foregroundStyle={accent} lineLimit={1}>
-                {showPlays ? "收起" : "展开"}
-              </Text>
+              <Image systemName="arrow.2.circlepath" imageScale="small" foregroundStyle={accent} />
+              <Text font="caption2" foregroundStyle={accent} lineLimit={1}>{medLabel}</Text>
             </HStack>
           </Button>
         </HStack>
-        {largeServers.map((server, i) => {
-          const plays = server.sessions.filter(s => s.playing)
-          const shortName = server.name.replace("Nanflix-", "")
-          return (
-            <VStack key={server.id} alignment="leading" spacing={4}>
-              <HStack spacing={6}>
-                <Text font="subheadline" fontWeight="bold" foregroundStyle="#F1F5FA" lineLimit={1}>
-                  {shortName}
-                </Text>
-                <Text font="caption2" foregroundStyle={plays.length ? accent : muted}>
-                  {plays.length ? `${plays.length} 播放中` : "空闲"}
-                </Text>
-                {server.status !== "ok" ? <Text font="caption2" foregroundStyle={warning}>异常</Text> : null}
+        {medServer == null ? <VStack alignment="leading" spacing={5}>
+          <Text font="title3" fontWeight="semibold">未找到此服务器</Text>
+          <Text font="caption2" foregroundStyle={muted} lineLimit={2}>请检查组件「参数」里填写的名称</Text>
+        </VStack> : <>
+          {medFail ? <Text font="caption2" foregroundStyle={warning} lineLimit={1}>服务器查询异常，显示可能不完整</Text> : null}
+          {medPlays.length ? medPlays.map((p, j) => (
+            <VStack key={String(j)} alignment="leading" spacing={4}>
+              <HStack spacing={5} alignment="bottom" padding={{ bottom: 2 }}>
+                <Image systemName={p.paused ? "pause.fill" : "play.fill"}
+                  imageScale="small" foregroundStyle={p.paused ? warning : accent} />
+                <Text font="subheadline" lineLimit={1}>{p.title || "未知影片"}</Text>
+                {epCode(p.sub) ? <Text font="caption" foregroundStyle={muted} lineLimit={1}>
+                  {epCode(p.sub)}
+                </Text> : null}
+                <Spacer />
+                <Text font="caption" foregroundStyle={muted} lineLimit={1}>{p.user}</Text>
               </HStack>
-              {showPlays ? plays.map((p, j) => (
-                <HStack key={String(j)} spacing={5} alignment="bottom" padding={{ bottom: 2 }}>
-                  <Image systemName={p.paused ? "pause.fill" : "play.fill"}
-                    imageScale="small" foregroundStyle={p.paused ? warning : accent} />
-                  <Text font="subheadline" lineLimit={1}>{p.title || "未知影片"}</Text>
-                  {epCode(p.sub) ? <Text font="caption" foregroundStyle={muted} lineLimit={1}>
-                    {epCode(p.sub)}
-                  </Text> : null}
-                  <Spacer />
-                  <Text font="caption" foregroundStyle={muted} lineLimit={1}>{p.user}</Text>
-                </HStack>
-              )) : null}
-              {i < largeServers.length - 1 ? <Divider /> : null}
             </VStack>
-          )
-        })}
+          )) : <VStack alignment="leading" spacing={5}>
+            <Text font="title3" fontWeight="semibold">暂无在播</Text>
+            <Text font="caption2" foregroundStyle={muted} lineLimit={1}>有人开始播放后将在下次刷新显示</Text>
+          </VStack>}
+        </>}
         <Spacer minLength={0} />
-        <Text font="caption2" foregroundStyle={offline || medFailures ? warning : muted} lineLimit={1}>
-          {data ? updateText : "等待连接"}{medFailures ? ` · ${medFailures} 台异常` : ""} · v0.4.3
+        <Text font="caption2" foregroundStyle={offline || medFail ? warning : muted} lineLimit={1}>
+          {data ? updateText : "等待连接"}{medFail ? " · 台异常" : ""} · v0.5.0
         </Text>
       </VStack>,
       { policy: "after", date: new Date(Date.now() + 2 * 60 * 1000) },
