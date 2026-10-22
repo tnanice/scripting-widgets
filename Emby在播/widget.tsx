@@ -148,9 +148,15 @@ async function main() {
           )
         })}
         <Spacer minLength={0} />
-        <Text font="caption2" foregroundStyle={offline || largeFailures ? warning : muted} lineLimit={1}>
-          {data ? updateText : "等待连接"}{largeFailures ? ` · ${largeFailures} 台异常` : ""}
-        </Text>
+        <HStack spacing={6}>
+          <Text font="caption2" foregroundStyle={offline || largeFailures ? warning : muted} lineLimit={1}>
+            {data ? updateText : "等待连接"}{largeFailures ? ` · ${largeFailures} 台异常` : ""}
+          </Text>
+          <Spacer />
+          <Button intent={CycleServerIntent({ action: "refresh" })} buttonStyle="plain">
+            <Image systemName="arrow.clockwise" imageScale="small" foregroundStyle={accent} />
+          </Button>
+        </HStack>
       </VStack>,
       { policy: "after", date: new Date(Date.now() + 2 * 60 * 1000) },
     )
@@ -214,9 +220,15 @@ async function main() {
           </VStack>}
         </>}
         <Spacer minLength={0} />
-        <Text font="caption2" foregroundStyle={offline || medFail ? warning : muted} lineLimit={1}>
-          {data ? updateText : "等待连接"}{medFail ? " · 台异常" : ""} · v0.5.0
-        </Text>
+        <HStack spacing={6}>
+          <Text font="caption2" foregroundStyle={offline || medFail ? warning : muted} lineLimit={1}>
+            {data ? updateText : "等待连接"}{medFail ? " · 台异常" : ""}
+          </Text>
+          <Spacer />
+          <Button intent={CycleServerIntent({ action: "refresh" })} buttonStyle="plain">
+            <Image systemName="arrow.clockwise" imageScale="small" foregroundStyle={accent} />
+          </Button>
+        </HStack>
       </VStack>,
       { policy: "after", date: new Date(Date.now() + 2 * 60 * 1000) },
     )
@@ -268,10 +280,16 @@ async function main() {
         <Text font="caption2" foregroundStyle={muted} lineLimit={2}>{emptySubtitle}</Text>
       </VStack>}
       <Spacer minLength={0} />
-      <Text font="caption2" foregroundStyle={offline || failures ? warning : muted} lineLimit={1}>
-        {data ? updateText : "等待连接"}{failures ? ` · ${failures} 台异常` : ""}
-        {rows.length > visible.length ? ` · 另 ${rows.length - visible.length} 个在播` : ""}
-      </Text>
+      <HStack spacing={6}>
+        <Text font="caption2" foregroundStyle={offline || failures ? warning : muted} lineLimit={1}>
+          {data ? updateText : "等待连接"}{failures ? ` · ${failures} 台异常` : ""}
+          {rows.length > visible.length ? ` · 另 ${rows.length - visible.length} 个在播` : ""}
+        </Text>
+        <Spacer />
+        <Button intent={CycleServerIntent({ action: "refresh" })} buttonStyle="plain">
+          <Image systemName="arrow.clockwise" imageScale="small" foregroundStyle={accent} />
+        </Button>
+      </HStack>
     </VStack>,
     { policy: "after", date: new Date(Date.now() + 2 * 60 * 1000) },
   )
